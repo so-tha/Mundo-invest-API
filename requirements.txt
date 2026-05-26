@@ -1,0 +1,32 @@
+# FastAPI e servidor
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+pydantic==2.5.3
+pydantic-settings==2.1.0
+python-multipart==0.0.6
+
+# Database
+sqlalchemy[asyncio]==2.0.25
+aiosqlite==0.19.0
+asyncpg==0.29.0  # Para PostgreSQL
+
+# Validação
+email-validator==2.1.0
+
+# Utilitários
+python-dotenv==1.0.0
+
+# Testes
+pytest==7.4.4
+pytest-asyncio==0.23.3
+pytest-cov==4.1.0
+httpx==0.26.0
+
+# Linting e formatação
+black==24.1.1
+flake8==7.0.0
+mypy==1.8.0
+isort==5.13.2
+
+# Para GraphQL (futuro)
+gql[all]==3.5.0

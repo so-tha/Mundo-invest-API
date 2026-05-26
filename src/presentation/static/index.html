@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mundo Invest API</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <header class="header">
+      <div class="container">
+        <div class="logo">
+          <h1>Mundo Invest API</h1>
+          <p>Documentação e Integração com Pipefy</p>
+        </div>
+        <div class="status-api">
+          <span id="api-status" class="status-indicator"
+            >⚠️ Verificando...</span
+          >
+        </div>
+      </div>
+    </header>
+
+    <main class="container main">
+      <section class="card">
+        <h2>📝 Criar Novo Cliente</h2>
+        <form id="form-cliente">
+          <div class="form-group">
+            <label for="nome">Nome Completo *</label>
+            <input
+              type="text"
+              id="nome"
+              name="nome"
+              required
+              placeholder="João Silva"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="email">Email *</label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              required
+              placeholder="joao@example.com"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="tipo">Tipo de Solicitação *</label>
+            <select id="tipo" name="tipo" required>
+              <option value="">Selecione...</option>
+              <option value="Atualização cadastral">
+                Atualização cadastral
+              </option>
+              <option value="Nova aplicação">Nova aplicação</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="patrimonio">Valor do Patrimônio (R$) *</label>
+            <input
+              type="number"
+              id="patrimonio"
+              name="patrimonio"
+              required
+              min="0"
+              placeholder="250000"
+              step="1000"
+            />
+          </div>
+
+          <button type="submit" class="btn btn-primary">Criar Cliente</button>
+        </form>
+        <div id="response-create" class="response-box hidden"></div>
+      </section>
+
+      <section class="card">
+        <h2>👥 Clientes Cadastrados</h2>
+        <button id="btn-refresh" class="btn btn-secondary">
+          🔄 Atualizar Lista
+        </button>
+        <div id="clientes-container" class="table-container">
+          <p class="loading">Carregando clientes...</p>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>🔔 Simular Webhook do Pipefy</h2>
+        <div class="form-group">
+          <label for="webhook-email">Email do Cliente *</label>
+          <input
+            type="email"
+            id="webhook-email"
+            placeholder="joao@example.com"
+          />
+        </div>
+        <button id="btn-webhook" class="btn btn-warning">
+          Disparar Webhook
+        </button>
+        <div id="response-webhook" class="response-box hidden"></div>
+      </section>
+
+      <section class="card">
+        <h2>📊 GraphQL Mutations do Pipefy</h2>
+        <div class="tabs">
+          <button class="tab-btn active" data-tab="createcard">
+            createCard
+          </button>
+          <button class="tab-btn" data-tab="updatecard">updateCardField</button>
+        </div>
+
+        <div id="createcard" class="tab-content active">
+          <h3>Mutation: Criar Card</h3>
+          <pre><code>mutation CreateCard($input: CreateCardInput!) {
+  createCard(input: $input) {
+    card {
+      id
+      title
+      fields {
+        name
+        value
+      }
+    }
+  }
+}</code></pre>
+          <p class="mutation-desc">
+            📍 Localizado em:
+            <code>src/infrastructure/external/pipefy_gateway_impl.py:20</code>
+          </p>
+        </div>
+
+        <div id="updatecard" class="tab-content">
+          <h3>Mutation: Atualizar Card</h3>
+          <pre><code>mutation UpdateCardField($input: UpdateCardFieldInput!) {
+  updateCardField(input: $input) {
+    card {
+      id
+      fields {
+        name
+        value
+      }
+    }
+  }
+}</code></pre>
+          <p class="mutation-desc">
+            📍 Localizado em:
+            <code>src/infrastructure/external/pipefy_gateway_impl.py:60</code>
+          </p>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>📋 Exemplos de Payload</h2>
+        <div class="tabs">
+          <button class="tab-btn active" data-tab="payload-create">
+            POST /clientes
+          </button>
+          <button class="tab-btn" data-tab="payload-webhook">
+            POST /webhooks/pipefy/card-updated
+          </button>
+        </div>
+
+        <div id="payload-create" class="tab-content active">
+          <h3>Criar Cliente</h3>
+          <pre><code>{
+  "cliente_nome": "João Silva",
+  "cliente_email": "joao.silva@example.com",
+  "tipo_solicitacao": "Atualização cadastral",
+  "valor_patrimonio": 250000
+}</code></pre>
+        </div>
+
+        <div id="payload-webhook" class="tab-content">
+          <h3>Webhook do Pipefy</h3>
+          <pre><code>{
+  "event_id": "evt_123",
+  "card_id": "card_456",
+  "cliente_email": "joao.silva@example.com",
+  "timestamp": "2026-05-25T12:00:00Z"
+}</code></pre>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>ℹ️ Informações</h2>
+        <div class="info-box">
+          <p>
+            <strong>Swagger UI:</strong>
+            <a href="/docs" target="_blank">http://localhost:8000/docs</a>
+          </p>
+          <p>
+            <strong>Health Check:</strong>
+            <a href="/health" target="_blank">http://localhost:8000/health</a>
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p>Mundo Invest API base</p>
+    </footer>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>
