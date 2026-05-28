@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 from ..enums import StatusCliente
 from ..enums import Prioridade
@@ -40,4 +40,4 @@ class Cliente:
     def processar(self):
         self.status = StatusCliente.PROCESSADO
         self.prioridade = self.calcular_prioridade()
-        self.atualizado_em = datetime.utcnow()
+        self.atualizado_em = datetime.now(timezone.utc)

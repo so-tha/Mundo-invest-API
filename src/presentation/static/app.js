@@ -86,7 +86,7 @@ async function handleCreateClient(e) {
     const formData = {
         cliente_nome: document.getElementById('nome').value,
         cliente_email: document.getElementById('email').value,
-        tipo_solicitacao: document.getElementById('tipo').value,
+        tipo_solicitacao: 'Nova aplicação',
         valor_patrimonio: parseInt(document.getElementById('patrimonio').value)
     };
 
@@ -171,7 +171,10 @@ async function loadClients() {
 
         result.data.clientes.forEach(cliente => {
             const statusClass = getStatusBadgeClass(cliente.status);
-            const priorityText = cliente.prioridade ? cliente.prioridade.replace('prioridade_', '') : '—';
+            const statusDisplay = cliente.status === 'Processado' ? 'Novo Cliente' : cliente.status;
+            const priorityText = cliente.prioridade 
+                ? cliente.prioridade.replace('prioridade_', '').charAt(0).toUpperCase() + cliente.prioridade.replace('prioridade_', '').slice(1)
+                : '—';
             const priorityClass = getPriorityBadgeClass(cliente.prioridade);
 
             html += `
@@ -181,7 +184,7 @@ async function loadClients() {
                     <td>${cliente.email}</td>
                     <td>${cliente.tipo_solicitacao}</td>
                     <td>${formatCurrency(cliente.valor_patrimonio)}</td>
-                    <td><span class="badge ${statusClass}">${cliente.status}</span></td>
+                    <td><span class="badge ${statusClass}">${statusDisplay}</span></td>
                     <td><span class="badge ${priorityClass}">${priorityText}</span></td>
                 </tr>
             `;

@@ -22,7 +22,7 @@ async def processar_webhook_pipefy(
     use_case: ProcessarWebhookUseCase = Depends(get_processar_webhook_use_case)
 ):
     try:
-        dto = WebhookDTO(**request.dict())
+        dto = WebhookDTO(**request.model_dump())
         resultado = await use_case.executar(dto)
         return WebhookResponse(**resultado)
     

@@ -386,15 +386,6 @@ code {
                 </div>
 
                 <div class="form-group">
-                    <label for="tipo">Tipo de Solicitação *</label>
-                    <select id="tipo" name="tipo" required>
-                        <option value="">Selecione...</option>
-                        <option value="Atualização cadastral">Atualização cadastral</option>
-                        <option value="Nova aplicação">Nova aplicação</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
                     <label for="patrimonio">Valor do Patrimônio (R$) *</label>
                     <input type="number" id="patrimonio" name="patrimonio" required min="0" placeholder="250000" step="1000">
                 </div>
@@ -631,7 +622,7 @@ async function handleCreateClient(e) {
     const formData = {
         cliente_nome: document.getElementById('nome').value,
         cliente_email: document.getElementById('email').value,
-        tipo_solicitacao: document.getElementById('tipo').value,
+        tipo_solicitacao: 'Nova aplicação',
         valor_patrimonio: parseInt(document.getElementById('patrimonio').value)
     };
     const result = await apiCall('POST', '/clientes/', formData);
@@ -675,9 +666,12 @@ async function loadClients() {
         let html = '<table><thead><tr><th>ID</th><th>Nome</th><th>Email</th><th>Tipo</th><th>Patrimônio</th><th>Status</th><th>Prioridade</th></tr></thead><tbody>';
         result.data.clientes.forEach(cliente => {
             const statusClass = getStatusBadgeClass(cliente.status);
-            const priorityText = cliente.prioridade ? cliente.prioridade.replace('prioridade_', '') : '—';
+            const statusDisplay = cliente.status === 'Processado' ? 'Novo Cliente' : cliente.status;
+            const priorityText = cliente.prioridade 
+                ? cliente.prioridade.replace('prioridade_', '').charAt(0).toUpperCase() + cliente.prioridade.replace('prioridade_', '').slice(1)
+                : '—';
             const priorityClass = getPriorityBadgeClass(cliente.prioridade);
-            html += `<tr><td>${cliente.id}</td><td><strong>${cliente.nome}</strong></td><td>${cliente.email}</td><td>${cliente.tipo_solicitacao}</td><td>${formatCurrency(cliente.valor_patrimonio)}</td><td><span class="badge ${statusClass}">${cliente.status}</span></td><td><span class="badge ${priorityClass}">${priorityText}</span></td></tr>`;
+            html += `<tr><td>${cliente.id}</td><td><strong>${cliente.nome}</strong></td><td>${cliente.email}</td><td>${cliente.tipo_solicitacao}</td><td>${formatCurrency(cliente.valor_patrimonio)}</td><td><span class="badge ${statusClass}">${statusDisplay}</span></td><td><span class="badge ${priorityClass}">${priorityText}</span></td></tr>`;
         });
         html += '</tbody></table>';
         container.innerHTML = html;

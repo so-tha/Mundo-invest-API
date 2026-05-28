@@ -19,15 +19,15 @@ run:
 	uvicorn src.presentation.api.main:app --reload --host 0.0.0.0 --port 8000
 
 test:
-	pytest tests/ -v --cov=src --cov-report=html
+	pytest src/tests/ -v --cov=src --cov-report=html
 
 lint:
-	flake8 src tests
+	flake8 src
 	mypy src
 
 format:
-	black src tests
-	isort src tests
+	black src
+	isort src
 
 clean:
 	find . -type d -name __pycache__ -exec rm -rf {} +

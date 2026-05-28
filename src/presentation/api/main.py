@@ -1,24 +1,33 @@
-from fastapi import FastAPI, logger
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from contextlib import asynccontextmanager
 import asyncio
+import logging
 from .ui import get_ui_html
 from .routes.clients import router as clientes_router
 from .routes.webhooks import router as webhooks_router
 
+logger = logging.getLogger(__name__)
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Startup
+    print("📊 Inicializando banco de dados...")
     try:
         await asyncio.sleep(3) 
         from ...infrastructure.database.connection import init_db
         await init_db()
+        print("✅ Banco de dados inicializado!")
     except Exception as e:
-        logger.info(f"Erro ao inicializar banco: {e}")
+        print(f"❌ Erro ao inicializar banco: {e}")
         import traceback
         traceback.print_exc()
+    
     yield
-    logger.info("Encerrando aplicação.")
+    
+    # Shutdown
+    print("👋 Encerrando aplicação...")
 
 
 app = FastAPI(
