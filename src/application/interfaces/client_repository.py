@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Optional
+
 from ...domain.entities.client import Cliente
 
 

@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from ...schemas.webhook_schema import WebhookRequest, WebhookResponse
-from ....application.use_cases.process_webhook_use_case import ProcessarWebhookUseCase
+
 from ....application.dtos.webhook_dto import WebhookDTO
+from ....application.use_cases.process_webhook_use_case import ProcessarWebhookUseCase
 from ....domain.exceptions.domain_exceptions import (
-    EventoDuplicadoException,
     ClienteNaoEncontradoException,
+    EventoDuplicadoException,
 )
+from ...schemas.webhook_schema import WebhookRequest, WebhookResponse
 from ..dependencies import get_processar_webhook_use_case
 
 router = APIRouter()

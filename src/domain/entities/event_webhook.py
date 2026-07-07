@@ -13,7 +13,7 @@ class EventoWebhook:
     processado: bool = False
     id: Optional[int] = None
     processado_em: Optional[datetime] = None
-    
+
     def marcar_como_processado(self):
         self.processado = True
         self.processado_em = datetime.now(timezone.utc)

@@ -1,6 +1,7 @@
+from datetime import datetime
+
 import pytest
 from httpx import AsyncClient
-from datetime import datetime
 
 
 @pytest.mark.asyncio
@@ -10,7 +11,7 @@ async def test_processar_webhook_sucesso(client: AsyncClient):
         "cliente_nome": "João Silva",
         "cliente_email": "joao@example.com",
         "tipo_solicitacao": "Atualização cadastral",
-        "valor_patrimonio": 250000
+        "valor_patrimonio": 250000,
     }
     await client.post("/clientes/", json=cliente_payload)
 
@@ -18,11 +19,11 @@ async def test_processar_webhook_sucesso(client: AsyncClient):
         "event_id": "evt_123",
         "card_id": "card_456",
         "cliente_email": "joao@example.com",
-        "timestamp": datetime.now().isoformat()
+        "timestamp": datetime.now().isoformat(),
     }
-    
+
     response = await client.post("/webhooks/pipefy/card-updated", json=webhook_payload)
-    
+
     assert response.status_code == 200
     data = response.json()
     assert data["sucesso"] is True
@@ -36,20 +37,20 @@ async def test_processar_webhook_evento_duplicado(client: AsyncClient):
         "cliente_nome": "João Silva",
         "cliente_email": "joao@example.com",
         "tipo_solicitacao": "Atualização cadastral",
-        "valor_patrimonio": 250000
+        "valor_patrimonio": 250000,
     }
     await client.post("/clientes/", json=cliente_payload)
-    
+
     webhook_payload = {
         "event_id": "evt_123",
         "card_id": "card_456",
         "cliente_email": "joao@example.com",
-        "timestamp": datetime.now().isoformat()
+        "timestamp": datetime.now().isoformat(),
     }
     await client.post("/webhooks/pipefy/card-updated", json=webhook_payload)
-    
+
     response = await client.post("/webhooks/pipefy/card-updated", json=webhook_payload)
-    
+
     assert response.status_code == 200
     data = response.json()
     assert data["sucesso"] is True
@@ -63,11 +64,11 @@ async def test_processar_webhook_cliente_nao_encontrado(client: AsyncClient):
         "event_id": "evt_999",
         "card_id": "card_999",
         "cliente_email": "naoexiste@example.com",
-        "timestamp": datetime.now().isoformat()
+        "timestamp": datetime.now().isoformat(),
     }
-    
+
     response = await client.post("/webhooks/pipefy/card-updated", json=webhook_payload)
-    
+
     assert response.status_code == 404
 
 
@@ -77,7 +78,7 @@ async def test_processar_webhook_prioridade_normal(client: AsyncClient):
         "cliente_nome": "Maria Santos",
         "cliente_email": "maria@example.com",
         "tipo_solicitacao": "Nova aplicação",
-        "valor_patrimonio": 150000  # < 200k
+        "valor_patrimonio": 150000,  # < 200k
     }
     await client.post("/clientes/", json=cliente_payload)
 
@@ -85,11 +86,11 @@ async def test_processar_webhook_prioridade_normal(client: AsyncClient):
         "event_id": "evt_456",
         "card_id": "card_789",
         "cliente_email": "maria@example.com",
-        "timestamp": datetime.now().isoformat()
+        "timestamp": datetime.now().isoformat(),
     }
-    
+
     response = await client.post("/webhooks/pipefy/card-updated", json=webhook_payload)
-    
+
     assert response.status_code == 200
     data = response.json()
     assert data["sucesso"] is True

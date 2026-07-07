@@ -1,20 +1,19 @@
-from typing import Dict, Any
 import logging
-from ..dtos.create_client_dto import CriarClienteDTO
-from ..interfaces.client_repository import IClienteRepository
-from ..interfaces.pipefy_gateway import IPipefyGateway
+from typing import Any, Dict
+
 from ...domain.entities.client import Cliente
 from ...domain.enums.status_client import StatusCliente
 from ...domain.exceptions.domain_exceptions import EmailDuplicadoException
+from ..dtos.create_client_dto import CriarClienteDTO
+from ..interfaces.client_repository import IClienteRepository
+from ..interfaces.pipefy_gateway import IPipefyGateway
 
 logger = logging.getLogger(__name__)
 
 
 class CriarClienteUseCase:
     def __init__(
-        self,
-        cliente_repository: IClienteRepository,
-        pipefy_gateway: IPipefyGateway
+        self, cliente_repository: IClienteRepository, pipefy_gateway: IPipefyGateway
     ):
         self._cliente_repository = cliente_repository
         self._pipefy_gateway = pipefy_gateway
@@ -23,7 +22,9 @@ class CriarClienteUseCase:
 
         logger.info(f"Iniciando criação de cliente: {dto.cliente_email}")
 
-        cliente_existente = await self._cliente_repository.buscar_por_email(dto.cliente_email)
+        cliente_existente = await self._cliente_repository.buscar_por_email(
+            dto.cliente_email
+        )
         if cliente_existente:
             logger.warning(f"Email duplicado: {dto.cliente_email}")
             raise EmailDuplicadoException(
@@ -35,7 +36,7 @@ class CriarClienteUseCase:
             email=dto.cliente_email,
             tipo_solicitacao=dto.tipo_solicitacao,
             valor_patrimonio=dto.valor_patrimonio,
-            status=StatusCliente.AGUARDANDO_ANALISE
+            status=StatusCliente.AGUARDANDO_ANALISE,
         )
         logger.info(f"✓ Entidade criada: {cliente.email}")
 
@@ -46,7 +47,7 @@ class CriarClienteUseCase:
             nome=cliente_salvo.nome,
             email=cliente_salvo.email,
             tipo_solicitacao=cliente_salvo.tipo_solicitacao,
-            valor_patrimonio=cliente_salvo.valor_patrimonio
+            valor_patrimonio=cliente_salvo.valor_patrimonio,
         )
         logger.info("📋 Mutation Pipefy gerada")
 

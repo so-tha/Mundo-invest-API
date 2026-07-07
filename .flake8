@@ -1,0 +1,3 @@
+[flake8]
+per-file-ignores =
+    src/presentation/api/ui.py:E501,W291,W293

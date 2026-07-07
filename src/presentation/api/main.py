@@ -1,20 +1,24 @@
+import logging
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
-from contextlib import asynccontextmanager
-import logging
-from .ui import get_ui_html
+
+from ...infrastructure.config.settings import settings
 from .routes.clients import router as clientes_router
 from .routes.webhooks import router as webhooks_router
-from ...infrastructure.config.settings import settings
+from .ui import get_ui_html
 
 logger = logging.getLogger(__name__)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("📊 Inicializando banco de dados...")
     try:
         from tenacity import retry, stop_after_attempt, wait_exponential
+
         from ...infrastructure.database.connection import init_db
 
         @retry(
@@ -30,6 +34,7 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         print(f"❌ Erro ao inicializar banco: {e}")
         import traceback
+
         traceback.print_exc()
 
     yield
@@ -37,10 +42,12 @@ async def lifespan(app: FastAPI):
     print("👋 Encerrando aplicação...")
 
 
-
 app = FastAPI(
     title="Mundo Invest API",
-    description="Sistema de gerenciamento de clientes e patrimônios investidos, com integração ao Pipefy via GraphQL.",
+    description=(
+        "Sistema de gerenciamento de clientes e patrimônios investidos, "
+        "com integração ao Pipefy via GraphQL."
+    ),
     version="1.0.0",
     lifespan=lifespan,
     docs_url="/docs",
@@ -49,7 +56,8 @@ app = FastAPI(
 )
 
 _cors_origins = (
-    ["*"] if settings.cors_origins == "*"
+    ["*"]
+    if settings.cors_origins == "*"
     else [o.strip() for o in settings.cors_origins.split(",")]
 )
 app.add_middleware(
@@ -63,24 +71,27 @@ app.add_middleware(
 app.include_router(clientes_router, prefix="/clientes", tags=["Clientes"])
 app.include_router(webhooks_router, prefix="/webhooks", tags=["Webhooks"])
 
+
 @app.get("/", response_class=HTMLResponse)
 async def root():
     return get_ui_html()
+
 
 @app.get("/health")
 async def health_check():
     try:
         from ...infrastructure.database.connection import engine
+
         async with engine.connect() as conn:
-            await conn.execute(__import__('sqlalchemy').text("SELECT 1"))
+            await conn.execute(__import__("sqlalchemy").text("SELECT 1"))
         return {
             "status": "ok",
             "service": "Mundo Invest API",
-            "database": "✅ conectado"
+            "database": "✅ conectado",
         }
     except Exception as e:
         return {
             "status": "error",
             "service": "Mundo Invest API",
-            "database": f"❌ {str(e)}"
+            "database": f"❌ {str(e)}",
         }
