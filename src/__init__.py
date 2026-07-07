@@ -1,3 +1,3 @@
-"""Mundo Invest - Sistema de Gerenciamento de Clientes"""
+"""InvestHub - API de Gerenciamento de Clientes e Patrimônios"""
 
 __version__ = "1.0.0"

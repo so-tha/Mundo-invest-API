@@ -1,5 +1,5 @@
 /**
- * Mundo Invest — Dashboard Frontend
+ * InvestHub — Dashboard Frontend
  * Premium fintech UI for the FastAPI backend
  */
 

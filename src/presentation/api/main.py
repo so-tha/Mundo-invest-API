@@ -44,9 +44,9 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Mundo Invest API",
+    title="InvestHub API",
     description=(
-        "Sistema de gerenciamento de clientes e patrimônios investidos, "
+        "API de gerenciamento de clientes e patrimônios investidos, "
         "com integração ao Pipefy via GraphQL."
     ),
     version="1.0.0",
@@ -90,12 +90,12 @@ async def health_check():
             await conn.execute(__import__("sqlalchemy").text("SELECT 1"))
         return {
             "status": "ok",
-            "service": "Mundo Invest API",
+            "service": "InvestHub API",
             "database": "✅ conectado",
         }
     except Exception as e:
         return {
             "status": "error",
-            "service": "Mundo Invest API",
+            "service": "InvestHub API",
             "database": f"❌ {str(e)}",
         }

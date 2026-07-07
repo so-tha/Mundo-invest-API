@@ -9,10 +9,10 @@ class Settings(BaseSettings):
         case_sensitive=False,
         extra="ignore",
     )
-    app_name: str = "Mundo Invest API"
+    app_name: str = "InvestHub API"
     environment: str = "development"
     debug: bool = True
-    database_url: str = "postgresql+asyncpg://postgres:postgres@db:5432/mundo_invest"
+    database_url: str = "postgresql+asyncpg://postgres:postgres@db:5432/investhub"
 
     pipefy_api_url: str = "https://api.pipefy.com/graphql"
     pipefy_api_token: Optional[str] = None

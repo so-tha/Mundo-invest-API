@@ -4,11 +4,11 @@ services:
   # API
   api:
     build: .
-    container_name: mundo-invest-api
+    container_name: investhub-api
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/mundo_invest
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/investhub
       - ENVIRONMENT=development
       - DEBUG=true
     volumes:
@@ -26,17 +26,17 @@ services:
   # PostgreSQL
   db:
     image: postgres:16-alpine
-    container_name: mundo-invest-db
+    container_name: investhub-db
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=mundo_invest
+      - POSTGRES_DB=investhub
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d mundo_invest"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d investhub"]
       interval: 5s
       timeout: 5s
       retries: 5

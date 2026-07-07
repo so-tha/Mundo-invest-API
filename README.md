@@ -1,4 +1,4 @@
-# Mundo Invest — Sistema de Gerenciamento de Clientes
+# InvestHub — API de Gerenciamento de Clientes
 
 > API REST para gerenciamento de clientes e patrimônios investidos, com integração ao Pipefy via GraphQL.
 
