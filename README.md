@@ -1,29 +1,48 @@
-# Mundo Invest - Sistema de Gerenciamento de Clientes
+# Mundo Invest — Sistema de Gerenciamento de Clientes
 
-Sistema interno para gerenciar clientes e patrimônios investidos, com integração ao Pipefy via GraphQL.
+> API REST para gerenciamento de clientes e patrimônios investidos, com integração ao Pipefy via GraphQL.
+
+![CI](https://github.com/SEU_USUARIO/Mundo-invest-API/actions/workflows/ci.yml/badge.svg)
+![Python](https://img.shields.io/badge/python-3.11+-blue?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.109-009688?logo=fastapi&logoColor=white)
+![License](https://img.shields.io/badge/license-MIT-green)
 
 ## 🏗️ Arquitetura
 
-O projeto segue os princípios de **Clean Architecture**:
+O projeto segue os princípios de **Clean Architecture**, garantindo que regras de negócio sejam completamente independentes de frameworks, banco de dados ou APIs externas:
 
-- **Domain**: Entidades e regras de negócio puras
-- **Application**: Casos de uso e interfaces
-- **Infrastructure**: Implementações concretas (banco, APIs externas)
-- **Presentation**: Controllers e API REST
+```
+src/
+├── domain/           # Entidades, enums e exceções de negócio (zero dependências externas)
+├── application/      # Casos de uso, DTOs e interfaces (depende só do domain)
+├── infrastructure/   # Implementações concretas: banco, gateway Pipefy (depende de tudo)
+└── presentation/     # FastAPI: rotas, schemas, dependencies (depende de application)
+```
+
+**Fluxo de uma requisição:**
+```
+HTTP Request → Route → UseCase → Repository/Gateway → Response
+                         ↑
+                    Domain Entity (regras de negócio)
+```
 
 ## 🚀 Como Rodar
 
 ### Com Docker (recomendado)
 
 ```bash
-# Subir todos os serviços
-docker-compose up -d
+# Copiar variáveis de ambiente
+cp .env.example .env
+
+# Subir todos os serviços (API + PostgreSQL + PgAdmin)
+docker compose up -d
 
 # Ver logs
-docker-compose logs -f api
+docker compose logs -f api
 
 # API disponível em: http://localhost:8000
-# PgAdmin em: http://localhost:5050
+# Swagger UI em:    http://localhost:8000/docs
+# PgAdmin em:       http://localhost:5050
 ```
 
 ### Localmente
@@ -38,17 +57,44 @@ venv\Scripts\activate  # Windows
 # Instalar dependências
 make install
 
-# Configurar .env
+# Configurar variáveis
 cp .env.example .env
+# Edite .env com suas configurações
 
 # Rodar aplicação
 make run
 ```
 
+## ⚙️ Configuração
+
+Copie `.env.example` para `.env` e ajuste conforme necessário:
+
+| Variável | Padrão | Descrição |
+|---|---|---|
+| `DATABASE_URL` | `postgresql+asyncpg://...` | URL do banco de dados |
+| `PIPEFY_API_TOKEN` | _(vazio)_ | Token Pipefy — se vazio, usa **modo stub** |
+| `PIPEFY_PIPE_ID` | _(vazio)_ | ID do pipe no Pipefy |
+| `API_KEY` | _(vazio)_ | Protege `POST /clientes` — se vazio, auth desabilitada |
+| `CORS_ORIGINS` | `*` | Origens CORS permitidas (ex: `https://meusite.com`) |
+| `ENVIRONMENT` | `development` | `development`, `production` ou `test` |
+
+### Modo Stub do Pipefy
+
+Quando `PIPEFY_API_TOKEN` não está configurado, o gateway opera em **modo stub**: as mutations GraphQL são montadas e retornadas na resposta, mas não são enviadas à API. Isso permite rodar e testar sem credenciais do Pipefy.
+
 ## 📚 Documentação da API
 
 Após rodar, acesse:
-- Swagger UI: http://localhost:8000/docs
+- **Swagger UI**: http://localhost:8000/docs
+- **ReDoc**: http://localhost:8000/redoc
+
+### Autenticação
+
+Endpoints de escrita requerem o header `X-API-Key` quando `API_KEY` está configurada:
+
+```bash
+curl -H "X-API-Key: sua_chave_aqui" -X POST http://localhost:8000/clientes/ ...
+```
 
 ## 🧪 Testes
 
@@ -59,14 +105,16 @@ make test
 # Testes com coverage
 pytest --cov=src --cov-report=html
 
-# Ver relatório
+# Ver relatório de coverage
 open htmlcov/index.html
 ```
 
 ## 📋 Endpoints
 
 ### POST /clientes
-Cria um novo cliente e estrutura card do Pipefy.
+Cria um novo cliente e enfileira a criação do card no Pipefy.
+
+Requer header `X-API-Key` quando `API_KEY` está configurada.
 
 **Request:**
 ```json
@@ -78,18 +126,6 @@ Cria um novo cliente e estrutura card do Pipefy.
 }
 ```
 
-**Exemplo com curl:**
-```bash
-curl -X POST http://localhost:8000/clientes/ \
-  -H "Content-Type: application/json" \
-  -d '{
-    "cliente_nome": "João Silva",
-    "cliente_email": "joao.silva@example.com",
-    "tipo_solicitacao": "Atualização cadastral",
-    "valor_patrimonio": 250000
-  }'
-```
-
 **Response (201 Created):**
 ```json
 {
@@ -97,27 +133,35 @@ curl -X POST http://localhost:8000/clientes/ \
   "mensagem": "Cliente cadastrado com sucesso",
   "cliente_id": 1,
   "status": "Aguardando Análise",
-  "pipefy_mutation": {
-    "mutation": "mutation CreateCard($input: CreateCardInput!) { ... }",
-    "variables": { "input": { "pipe_id": "...", "title": "Cliente: João Silva", ... } }
-  }
+  "pipefy_card_enqueued": true
 }
 ```
+
+**Erros:**
+- `409 Conflict` — Email já cadastrado
+- `400 Bad Request` — Dados inválidos (email mal formatado, patrimônio negativo)
+- `403 Forbidden` — API Key inválida
 
 ---
 
 ### GET /clientes
-Lista todos os clientes cadastrados.
+Lista clientes com paginação.
 
-**Exemplo com curl:**
 ```bash
-curl -X GET http://localhost:8000/clientes/
+# Página 1 (20 por página)
+curl http://localhost:8000/clientes/
+
+# Paginação customizada
+curl "http://localhost:8000/clientes/?limit=10&offset=20"
 ```
 
 **Response (200 OK):**
 ```json
 {
-  "total": 2,
+  "sucesso": true,
+  "total": 1,
+  "limit": 20,
+  "offset": 0,
   "clientes": [
     {
       "id": 1,
@@ -126,7 +170,7 @@ curl -X GET http://localhost:8000/clientes/
       "tipo_solicitacao": "Atualização cadastral",
       "valor_patrimonio": 250000,
       "status": "Aguardando Análise",
-      "prioridade": "ALTA"
+      "prioridade": null
     }
   ]
 }
@@ -135,7 +179,7 @@ curl -X GET http://localhost:8000/clientes/
 ---
 
 ### POST /webhooks/pipefy/card-updated
-Processa notificação de atualização do Pipefy.
+Processa notificação de atualização do Pipefy. **Idempotente** — eventos duplicados retornam 200 sem reprocessamento.
 
 **Request:**
 ```json
@@ -147,18 +191,6 @@ Processa notificação de atualização do Pipefy.
 }
 ```
 
-**Exemplo com curl:**
-```bash
-curl -X POST http://localhost:8000/webhooks/pipefy/card-updated \
-  -H "Content-Type: application/json" \
-  -d '{
-    "event_id": "evt_'$(date +%s)'",
-    "card_id": "card_abc123",
-    "cliente_email": "joao.silva@example.com",
-    "timestamp": "'$(date -u +'%Y-%m-%dT%H:%M:%SZ')'"
-  }'
-```
-
 **Response (200 OK):**
 ```json
 {
@@ -167,124 +199,72 @@ curl -X POST http://localhost:8000/webhooks/pipefy/card-updated \
   "cliente_email": "joao.silva@example.com",
   "status": "Processado",
   "prioridade": "ALTA",
-  "pipefy_mutation": {
-    "sucesso": true,
-    "atualizacoes": [
-      {
-        "tipo": "status",
-        "mutation": "mutation UpdateCardField($input: UpdateCardFieldInput!) { ... }",
-        "variables": { "input": { "card_id": "card_456", "field_id": "status_field_id", "new_value": "Processado" } }
-      },
-      {
-        "tipo": "prioridade",
-        "mutation": "mutation UpdateCardField($input: UpdateCardFieldInput!) { ... }",
-        "variables": { "input": { "card_id": "card_456", "field_id": "prioridade_field_id", "new_value": "ALTA" } }
-      }
-    ]
-  }
+  "pipefy_mutation": { ... }
 }
+```
+
+---
+
+### GET /health
+Verifica status da API e conexão com banco de dados.
+
+```bash
+curl http://localhost:8000/health
 ```
 
 ## 🔧 Tecnologias
 
-- Python 3.11+
-- FastAPI
-- SQLAlchemy (async)
-- PostgreSQL / SQLite
-- Pydantic
-- Pytest
-- Docker
-
-## 📦 Estrutura do Projeto
-
-```
-src/
-├── domain/                  # Entidades e regras de negócio
-│   ├── entities/           # Cliente, EventoWebhook
-│   ├── enums/              # StatusCliente, Prioridade
-│   └── exceptions/         # Exceções de domínio
-├── application/            # Casos de uso
-│   ├── use_cases/          # CriarClienteUseCase, ProcessarWebhookUseCase
-│   ├── dtos/               # Data Transfer Objects
-│   └── interfaces/         # Abstrações (Repository, Gateway)
-├── infrastructure/         # Implementações concretas
-│   ├── database/           # SQLAlchemy models, conexão
-│   └── external/           # PipefyGatewayImpl (GraphQL)
-└── presentation/           # API e UI
-    ├── api/                # FastAPI routes, main.py
-    ├── routes/             # Endpoints (clientes, webhooks)
-    ├── schemas/            # Pydantic models
-    └── static/             # HTML/CSS/JS frontend
-
-tests/
-├── unit/                   # Testes unitários
-├── integration/            # Testes de integração
-└── e2e/                    # Testes ponta-a-ponta
-```
+| Camada | Tecnologia |
+|---|---|
+| Framework | FastAPI 0.109 + Uvicorn |
+| Validação | Pydantic v2 |
+| ORM | SQLAlchemy 2.0 (async) |
+| Banco | PostgreSQL / SQLite |
+| HTTP Client | httpx (gateway Pipefy) |
+| Resiliência | tenacity (retry com backoff) |
+| Testes | pytest + pytest-asyncio |
+| Linting | black + flake8 + isort + mypy |
+| Infra | Docker + docker-compose |
 
 ## 🚀 Visão de Produção (AWS)
 
-Para escalar essa arquitetura em produção na AWS, a estrutura seria a seguinte:
+Para escalar essa arquitetura em produção na AWS:
 
-### **Componentes na AWS:**
+### Componentes
 
-1. **API Gateway + Lambda (Compute)**
-   - Substituir FastAPI rodando em servidor por AWS Lambda
-   - API Gateway gerencia autenticação, rate limiting e roteamento
-   - Cada endpoint (`POST /clientes`, `POST /webhooks/pipefy/card-updated`) seria uma Lambda Function
-   - Benefício: Escalabilidade automática, pagamento por uso
+1. **API Gateway + Lambda** — Substitui FastAPI em servidor por funções serverless. Escalabilidade automática, pagamento por uso.
 
-2. **RDS (Relational Database Service)**
-   - Substituir PostgreSQL local por RDS PostgreSQL gerenciado
-   - Backups automáticos, Multi-AZ para alta disponibilidade
-   - Monitoring nativo com CloudWatch
-   - Connection pooling via RDS Proxy para otimizar Lambda
+2. **RDS PostgreSQL** — Banco gerenciado com backups automáticos e Multi-AZ.
 
-3. **DynamoDB (Alternativa para Cache/Idempotência)**
-   - Armazenar histórico de `event_id` processados para idempotência
-   - TTL automático para limpeza de eventos antigos (após 24h, por exemplo)
-   - Mais rápido que consultar PostgreSQL para validação de duplicata
+3. **DynamoDB** — Cache de `event_id` processados para idempotência do webhook com TTL automático.
 
-4. **SQS (Processamento Assíncrono)**
-   - Fila para processar webhooks do Pipefy
-   - Lambda consome mensagens da fila e processa clientes
-   - Desacopla recebimento de webhook do processamento
-   - Retry automático em caso de falha
+4. **SQS** — Fila para processar webhooks de forma assíncrona e com retry automático.
 
-5. **CloudWatch (Logging e Monitoring)**
-   - Logs centralizados de todas as Lambda Functions
-   - Métricas de performance, erros e latência
-   - Alertas conforme limiares configurados
-   - Distribuição de logs em CloudWatch Logs
+5. **CloudWatch** — Logs centralizados, métricas de performance e alertas.
 
-6. **SNS (Notificações)**
-   - Publicar eventos de criação/atualização de clientes
-   - Time comercial pode se inscrever para receber notificações
-   - Integração com e-mail ou Slack
+6. **SNS** — Notificações de criação/atualização de clientes para equipe comercial.
 
-### **Fluxo de Produção:**
+### Fluxo de Produção
 
 ```
 Pipefy (Webhook)
     ↓
 API Gateway
     ↓
-Lambda: ProcessarWebhook
+Lambda: ReceberWebhook
     ↓
 SQS (Fila)
     ↓
 Lambda: ProcessarWebhookAsync
     ├→ RDS (Atualizar cliente)
-    ├→ DynamoDB (Registrar event_id)
-    └→ SNS (Notificar)
+    ├→ DynamoDB (Registrar event_id + TTL)
+    └→ SNS (Notificar equipe)
 ```
 
-### **Benefícios:**
+### Benefícios
 
-- **Escalabilidade**: Automática via Lambda (concorrência ilimitada)
-- **Confiabilidade**: RDS Multi-AZ, backup automático
+- **Escalabilidade**: Automática via Lambda
+- **Confiabilidade**: RDS Multi-AZ, retry via SQS
 - **Idempotência**: DynamoDB + TTL garante processamento único
 - **Observabilidade**: CloudWatch centraliza logs e métricas
-- **Custo**: Pagamento apenas pelo tempo de execução (Lambda) e dados armazenados
-- **Sem Gerenciamento**: AWS gerencia patches, atualizações e infraestrutura
-
+- **Custo**: Pagamento apenas por execução (Lambda)

@@ -1,5 +1,4 @@
 from typing import Dict, Any
-from datetime import datetime
 from ..dtos.webhook_dto import WebhookDTO
 from ..interfaces.client_repository import IClienteRepository
 from ..interfaces.event_repository import IEventoRepository

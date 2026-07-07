@@ -22,12 +22,19 @@ test:
 	pytest src/tests/ -v --cov=src --cov-report=html
 
 lint:
-	flake8 src
-	mypy src
+	flake8 src --max-line-length=100 --extend-ignore=E203,W503
+	isort --check-only src
+
+type-check:
+	mypy src --ignore-missing-imports
 
 format:
 	black src
 	isort src
+
+coverage:
+	pytest src/tests/ -v --cov=src --cov-report=html
+	@echo "Relatório em: htmlcov/index.html"
 
 clean:
 	find . -type d -name __pycache__ -exec rm -rf {} +

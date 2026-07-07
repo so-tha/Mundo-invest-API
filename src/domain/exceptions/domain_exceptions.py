@@ -3,6 +3,11 @@ class DomainException(Exception):
     pass
 
 
+class EmailDuplicadoException(DomainException):
+    """Email já cadastrado no sistema"""
+    pass
+
+
 class EventoDuplicadoException(DomainException):
     """Evento já foi processado anteriormente"""
     pass

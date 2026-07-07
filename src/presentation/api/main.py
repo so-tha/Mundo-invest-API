@@ -2,47 +2,60 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from contextlib import asynccontextmanager
-import asyncio
 import logging
 from .ui import get_ui_html
 from .routes.clients import router as clientes_router
 from .routes.webhooks import router as webhooks_router
+from ...infrastructure.config.settings import settings
 
 logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
     print("📊 Inicializando banco de dados...")
     try:
-        await asyncio.sleep(3) 
+        from tenacity import retry, stop_after_attempt, wait_exponential
         from ...infrastructure.database.connection import init_db
-        await init_db()
+
+        @retry(
+            stop=stop_after_attempt(10),
+            wait=wait_exponential(multiplier=1, min=1, max=8),
+            reraise=True,
+        )
+        async def _init_with_retry():
+            await init_db()
+
+        await _init_with_retry()
         print("✅ Banco de dados inicializado!")
     except Exception as e:
         print(f"❌ Erro ao inicializar banco: {e}")
         import traceback
         traceback.print_exc()
-    
+
     yield
-    
-    # Shutdown
+
     print("👋 Encerrando aplicação...")
+
 
 
 app = FastAPI(
     title="Mundo Invest API",
-    description="Sistema de gerenciamento de clientes e patrimônios",
+    description="Sistema de gerenciamento de clientes e patrimônios investidos, com integração ao Pipefy via GraphQL.",
     version="1.0.0",
     lifespan=lifespan,
     docs_url="/docs",
     redoc_url="/redoc",
-    openapi_url="/openapi.json"
+    openapi_url="/openapi.json",
+)
+
+_cors_origins = (
+    ["*"] if settings.cors_origins == "*"
+    else [o.strip() for o in settings.cors_origins.split(",")]
 )
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=_cors_origins,
+    allow_credentials=_cors_origins != ["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )

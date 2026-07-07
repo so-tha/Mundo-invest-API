@@ -64,11 +64,14 @@ class ClienteRepositoryImpl(IClienteRepository):
         
         return self._to_entity(db_cliente)
     
-    async def listar_todos(self) -> list:
-        result = await self._session.execute(select(ClienteModel))
+    async def listar_todos(self, limit: int = 20, offset: int = 0) -> list:
+        result = await self._session.execute(
+            select(ClienteModel).offset(offset).limit(limit)
+        )
         db_clientes = result.scalars().all()
-        
+
         return [self._to_entity(db_cliente) for db_cliente in db_clientes]
+
     
     @staticmethod
     def _to_entity(model: ClienteModel) -> Cliente:

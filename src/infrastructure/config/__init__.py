@@ -1,4 +1,4 @@
-from .settings import settings, Settings
+from .settings import settings, Settings  # noqa: F401
 
 __all__ = [
     "settings",

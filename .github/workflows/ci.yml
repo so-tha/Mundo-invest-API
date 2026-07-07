@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-and-test:
+    name: Lint & Test
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: mundo_invest_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/mundo_invest_test
+      ENVIRONMENT: test
+      DEBUG: "false"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Lint — black (format check)
+        run: black --check src/
+
+      - name: Lint — isort (import order)
+        run: isort --check-only src/
+
+      - name: Lint — flake8
+        run: flake8 src/ --max-line-length=100 --extend-ignore=E203,W503
+
+      - name: Type check — mypy
+        run: mypy src/ --ignore-missing-imports
+
+      - name: Run tests with coverage
+        run: pytest --cov=src --cov-report=xml --cov-report=term-missing -v
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        if: always()
+        with:
+          files: coverage.xml
+          fail_ci_if_error: false

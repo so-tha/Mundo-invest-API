@@ -29,10 +29,7 @@ class CriarClienteResponse(BaseModel):
                 "mensagem": "Cliente cadastrado com sucesso",
                 "cliente_id": 123,
                 "status": "Aguardando Análise",
-                "pipefy_mutation": {
-                    "mutation": "...",
-                    "variables": {},
-                },
+                "pipefy_card_enqueued": True,
             }
         }
     )
@@ -41,7 +38,8 @@ class CriarClienteResponse(BaseModel):
     mensagem: str
     cliente_id: int
     status: str
-    pipefy_mutation: Optional[dict] = None
+    # True = card enviado/enfileirado no Pipefy; False = falha no gateway
+    pipefy_card_enqueued: bool = False
 
 
 class ClienteDetailResponse(BaseModel):
@@ -73,7 +71,9 @@ class ListarClientesResponse(BaseModel):
         json_schema_extra={
             "example": {
                 "sucesso": True,
-                "total": 2,
+                "total": 1,
+                "limit": 20,
+                "offset": 0,
                 "clientes": [
                     {
                         "id": 1,
@@ -91,4 +91,6 @@ class ListarClientesResponse(BaseModel):
 
     sucesso: bool
     total: int
+    limit: int
+    offset: int
     clientes: list[ClienteDetailResponse]

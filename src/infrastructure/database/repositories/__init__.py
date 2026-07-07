@@ -1,6 +1,6 @@
 """Implementações de repositórios"""
-from .client_repository import ClienteRepositoryImpl
-from .event_repository import EventoRepositoryImpl
+from .client_repository import ClienteRepositoryImpl  # noqa: F401
+from .event_repository import EventoRepositoryImpl  # noqa: F401
 
 __all__ = [
     "ClienteRepositoryImpl",
