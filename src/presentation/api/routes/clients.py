@@ -1,16 +1,19 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from ....application.dtos.create_client_dto import CriarClienteDTO
+from ....application.use_cases.create_client_use_case import CriarClienteUseCase
+from ....domain.exceptions.domain_exceptions import EmailDuplicadoException
+from ....infrastructure.database.connection import get_db_session
+from ....infrastructure.database.repositories.client_repository import (
+    ClienteRepositoryImpl,
+)
 from ...schemas.client_schema import (
+    ClienteDetailResponse,
     CriarClienteRequest,
     CriarClienteResponse,
     ListarClientesResponse,
-    ClienteDetailResponse,
 )
-from ....application.use_cases.create_client_use_case import CriarClienteUseCase
-from ....application.dtos.create_client_dto import CriarClienteDTO
-from ....domain.exceptions.domain_exceptions import EmailDuplicadoException
-from ....infrastructure.database.repositories.client_repository import ClienteRepositoryImpl
-from ....infrastructure.database.connection import get_db_session
 from ..dependencies import get_criar_cliente_use_case, verify_api_key
 
 router = APIRouter()
@@ -57,7 +60,9 @@ async def criar_cliente(
     description="Retorna a lista paginada de clientes cadastrados.",
 )
 async def listar_clientes(
-    limit: int = Query(default=20, ge=1, le=100, description="Máximo de itens por página"),
+    limit: int = Query(
+        default=20, ge=1, le=100, description="Máximo de itens por página"
+    ),
     offset: int = Query(default=0, ge=0, description="Índice inicial (offset)"),
     session: AsyncSession = Depends(get_db_session),
 ):

@@ -1,13 +1,13 @@
 import asyncio
-import sys
 import os
+import sys
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
-
-from src.infrastructure.database.connection import init_db
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 
 async def main():
+    from src.infrastructure.database.connection import init_db
+
     print("Inicializando banco de dados...")
     await init_db()
     print("✓ Banco de dados inicializado com sucesso!")

@@ -1,14 +1,20 @@
 from typing import Optional
+
 from fastapi import Depends, HTTPException, Security, status
 from fastapi.security.api_key import APIKeyHeader
 from sqlalchemy.ext.asyncio import AsyncSession
-from ...infrastructure.database.connection import get_db_session
-from ...infrastructure.database.repositories.client_repository import ClienteRepositoryImpl
-from ...infrastructure.database.repositories.event_repository import EventoRepositoryImpl
-from ...infrastructure.external.pipefy_gateway_impl import PipefyGatewayImpl
+
 from ...application.use_cases.create_client_use_case import CriarClienteUseCase
 from ...application.use_cases.process_webhook_use_case import ProcessarWebhookUseCase
 from ...infrastructure.config.settings import settings
+from ...infrastructure.database.connection import get_db_session
+from ...infrastructure.database.repositories.client_repository import (
+    ClienteRepositoryImpl,
+)
+from ...infrastructure.database.repositories.event_repository import (
+    EventoRepositoryImpl,
+)
+from ...infrastructure.external.pipefy_gateway_impl import PipefyGatewayImpl
 
 _api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 

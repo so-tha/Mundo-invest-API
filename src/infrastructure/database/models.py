@@ -1,15 +1,16 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, Enum
+from sqlalchemy import Boolean, Column, DateTime, Enum, Float, Integer, String
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.sql import func
-from ...domain.enums.status_client import StatusCliente
+
 from ...domain.enums.priority import Prioridade
+from ...domain.enums.status_client import StatusCliente
 
 Base = declarative_base()
 
 
 class ClienteModel(Base):
     __tablename__ = "clientes"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     nome = Column(String, nullable=False)
     email = Column(String, unique=True, index=True, nullable=False)
@@ -23,7 +24,7 @@ class ClienteModel(Base):
 
 class EventoWebhookModel(Base):
     __tablename__ = "eventos_webhook"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     event_id = Column(String, unique=True, index=True, nullable=False)
     card_id = Column(String, nullable=False)

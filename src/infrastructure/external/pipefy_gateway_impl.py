@@ -8,8 +8,9 @@ Gateway do Pipefy — suporta dois modos:
   - Modo Real (com PIPEFY_API_TOKEN configurado):
     Envia as mutations via HTTP para https://api.pipefy.com/graphql.
 """
+
 import logging
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
 import httpx
 
@@ -78,14 +79,24 @@ class PipefyGatewayImpl(IPipefyGateway):
                 "fields_attributes": [
                     {"field_id": "email_field_id", "field_value": email},
                     {"field_id": "tipo_field_id", "field_value": tipo_solicitacao},
-                    {"field_id": "patrimonio_field_id", "field_value": str(valor_patrimonio)},
+                    {
+                        "field_id": "patrimonio_field_id",
+                        "field_value": str(valor_patrimonio),
+                    },
                 ],
             }
         }
 
         if self._is_stub:
-            logger.debug(f"[STUB] criar_card para '{nome}' — mutation estruturada, não enviada.")
-            return {"sucesso": True, "modo": "stub", "mutation": mutation, "variables": variables}
+            logger.debug(
+                f"[STUB] criar_card para '{nome}' — mutation estruturada, não enviada."
+            )
+            return {
+                "sucesso": True,
+                "modo": "stub",
+                "mutation": mutation,
+                "variables": variables,
+            }
 
         async with httpx.AsyncClient(timeout=10.0) as client:
             response = await client.post(
@@ -149,7 +160,9 @@ class PipefyGatewayImpl(IPipefyGateway):
         ]
 
         if self._is_stub:
-            logger.debug(f"[STUB] atualizar_card '{card_id}' — mutations estruturadas, não enviadas.")
+            logger.debug(
+                f"[STUB] atualizar_card '{card_id}' — mutations estruturadas, não enviadas."
+            )
             return {"sucesso": True, "modo": "stub", "atualizacoes": updates}
 
         resultados = []
@@ -157,7 +170,10 @@ class PipefyGatewayImpl(IPipefyGateway):
             for update in updates:
                 response = await client.post(
                     self.PIPEFY_URL,
-                    json={"query": update["mutation"], "variables": update["variables"]},
+                    json={
+                        "query": update["mutation"],
+                        "variables": update["variables"],
+                    },
                     headers=self._headers,
                 )
                 response.raise_for_status()

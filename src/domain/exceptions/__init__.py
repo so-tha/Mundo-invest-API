@@ -1,8 +1,8 @@
-from .domain_exceptions import (  # noqa: F401
+from .domain_exceptions import ClienteNaoEncontradoException  # noqa: F401
+from .domain_exceptions import (
     DomainException,
     EmailDuplicadoException,
     EventoDuplicadoException,
-    ClienteNaoEncontradoException,
 )
 
 __all__ = [

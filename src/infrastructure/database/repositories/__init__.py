@@ -1,4 +1,5 @@
 """Implementações de repositórios"""
+
 from .client_repository import ClienteRepositoryImpl  # noqa: F401
 from .event_repository import EventoRepositoryImpl  # noqa: F401
 
