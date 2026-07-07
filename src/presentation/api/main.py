@@ -1,14 +1,15 @@
 import logging
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from ...infrastructure.config.settings import settings
 from .routes.clients import router as clientes_router
 from .routes.webhooks import router as webhooks_router
-from .ui import get_ui_html
 
 logger = logging.getLogger(__name__)
 
@@ -71,10 +72,13 @@ app.add_middleware(
 app.include_router(clientes_router, prefix="/clientes", tags=["Clientes"])
 app.include_router(webhooks_router, prefix="/webhooks", tags=["Webhooks"])
 
+_static_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "static"))
+app.mount("/static", StaticFiles(directory=_static_dir), name="static")
 
-@app.get("/", response_class=HTMLResponse)
+
+@app.get("/")
 async def root():
-    return get_ui_html()
+    return FileResponse(os.path.join(_static_dir, "index.html"))
 
 
 @app.get("/health")

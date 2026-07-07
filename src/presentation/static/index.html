@@ -3,193 +3,295 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Mundo Invest API</title>
+    <title>Mundo Invest — Dashboard</title>
+    <meta name="description" content="Plataforma de gerenciamento de clientes e patrimônios da Mundo Invest." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/static/style.css" />
   </head>
   <body>
-    <header class="header">
-      <div class="container">
-        <div class="logo">
-          <h1>Mundo Invest API</h1>
-          <p>Documentação e Integração com Pipefy</p>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
         </div>
-        <div class="status-api">
-          <span id="api-status" class="status-indicator"
-            >⚠️ Verificando...</span
-          >
+        <span class="brand-name">Mundo Invest</span>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="#" class="nav-item active" id="nav-dashboard" data-section="dashboard">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+          Dashboard
+        </a>
+        <a href="#" class="nav-item" id="nav-clientes" data-section="clientes">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Clientes
+        </a>
+        <a href="#" class="nav-item" id="nav-novo" data-section="novo">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+          Novo Cliente
+        </a>
+        <a href="#" class="nav-item" id="nav-webhook" data-section="webhook">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
+          Webhooks
+        </a>
+        <a href="/docs" target="_blank" class="nav-item">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Swagger UI
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="api-status-pill" id="api-status">
+          <span class="status-dot"></span>
+          <span class="status-label">Verificando...</span>
         </div>
       </div>
-    </header>
+    </aside>
 
-    <main class="container main">
-      <section class="card">
-        <h2>📝 Criar Novo Cliente</h2>
-        <form id="form-cliente">
-          <div class="form-group">
-            <label for="nome">Nome Completo *</label>
-            <input
-              type="text"
-              id="nome"
-              name="nome"
-              required
-              placeholder="João Silva"
-            />
-          </div>
+    <!-- Main -->
+    <div class="main-wrapper">
 
-          <div class="form-group">
-            <label for="email">Email *</label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              required
-              placeholder="joao@example.com"
-            />
-          </div>
-
-          <div class="form-group">
-            <label for="patrimonio">Valor do Patrimônio (R$) *</label>
-            <input
-              type="number"
-              id="patrimonio"
-              name="patrimonio"
-              required
-              min="0"
-              placeholder="250000"
-              step="1000"
-            />
-          </div>
-
-          <button type="submit" class="btn btn-primary">Criar Cliente</button>
-        </form>
-        <div id="response-create" class="response-box hidden"></div>
-      </section>
-
-      <section class="card">
-        <h2>👥 Clientes Cadastrados</h2>
-        <button id="btn-refresh" class="btn btn-secondary">
-          🔄 Atualizar Lista
+      <!-- Topbar -->
+      <header class="topbar">
+        <button class="menu-toggle" id="menu-toggle" aria-label="Menu">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
         </button>
-        <div id="clientes-container" class="table-container">
-          <p class="loading">Carregando clientes...</p>
-        </div>
-      </section>
-
-      <section class="card">
-        <h2>🔔 Simular Webhook do Pipefy</h2>
-        <div class="form-group">
-          <label for="webhook-email">Email do Cliente *</label>
-          <input
-            type="email"
-            id="webhook-email"
-            placeholder="joao@example.com"
-          />
-        </div>
-        <button id="btn-webhook" class="btn btn-warning">
-          Disparar Webhook
-        </button>
-        <div id="response-webhook" class="response-box hidden"></div>
-      </section>
-
-      <section class="card">
-        <h2>📊 GraphQL Mutations do Pipefy</h2>
-        <div class="tabs">
-          <button class="tab-btn active" data-tab="createcard">
-            createCard
+        <div class="topbar-title" id="topbar-title">Dashboard</div>
+        <div class="topbar-actions">
+          <button class="btn-icon" id="btn-refresh-top" title="Atualizar dados">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
           </button>
-          <button class="tab-btn" data-tab="updatecard">updateCardField</button>
+          <a href="/health" target="_blank" class="btn-icon" title="Health check">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          </a>
         </div>
+      </header>
 
-        <div id="createcard" class="tab-content active">
-          <h3>Mutation: Criar Card</h3>
-          <pre><code>mutation CreateCard($input: CreateCardInput!) {
+      <!-- Content -->
+      <main class="content">
+
+        <!-- SECTION: Dashboard -->
+        <section class="section active" id="section-dashboard">
+          <div class="page-header">
+            <h2 class="page-title">Visão Geral</h2>
+            <p class="page-subtitle">Resumo operacional em tempo real</p>
+          </div>
+
+          <div class="metrics-grid">
+            <div class="metric-card" id="metric-total">
+              <div class="metric-icon icon-blue">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+              </div>
+              <div class="metric-body">
+                <span class="metric-label">Total de Clientes</span>
+                <span class="metric-value" id="metric-total-val">—</span>
+              </div>
+            </div>
+            <div class="metric-card" id="metric-patrimonio">
+              <div class="metric-icon icon-green">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 1 0 0 7h5a3.5 3.5 0 1 1 0 7H6"/></svg>
+              </div>
+              <div class="metric-body">
+                <span class="metric-label">Patrimônio Total</span>
+                <span class="metric-value" id="metric-patrimonio-val">—</span>
+              </div>
+            </div>
+            <div class="metric-card" id="metric-aguardando">
+              <div class="metric-icon icon-amber">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              </div>
+              <div class="metric-body">
+                <span class="metric-label">Aguardando Análise</span>
+                <span class="metric-value" id="metric-aguardando-val">—</span>
+              </div>
+            </div>
+            <div class="metric-card" id="metric-processados">
+              <div class="metric-icon icon-purple">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <div class="metric-body">
+                <span class="metric-label">Processados</span>
+                <span class="metric-value" id="metric-processados-val">—</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="recent-section">
+            <div class="section-header-row">
+              <h3>Clientes Recentes</h3>
+              <button class="btn btn-ghost" id="btn-ver-todos">Ver todos →</button>
+            </div>
+            <div id="dashboard-clientes-container" class="table-wrap">
+              <p class="empty-state"><span class="spinner"></span> Carregando...</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- SECTION: Clientes -->
+        <section class="section" id="section-clientes">
+          <div class="page-header">
+            <h2 class="page-title">Clientes</h2>
+            <p class="page-subtitle">Lista completa com paginação</p>
+          </div>
+          <div class="card">
+            <div class="card-header-row">
+              <div class="search-box">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" id="search-input" placeholder="Buscar por nome ou email..." />
+              </div>
+              <button class="btn btn-primary" id="btn-refresh-clientes">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                Atualizar
+              </button>
+            </div>
+            <div id="clientes-container" class="table-wrap">
+              <p class="empty-state"><span class="spinner"></span> Carregando...</p>
+            </div>
+            <div class="pagination" id="pagination"></div>
+          </div>
+        </section>
+
+        <!-- SECTION: Novo Cliente -->
+        <section class="section" id="section-novo">
+          <div class="page-header">
+            <h2 class="page-title">Novo Cliente</h2>
+            <p class="page-subtitle">Cadastre um cliente e integre com o Pipefy</p>
+          </div>
+          <div class="form-layout">
+            <div class="card form-card">
+              <form id="form-cliente" novalidate>
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label for="nome">Nome Completo <span class="required">*</span></label>
+                    <input type="text" id="nome" name="nome" required placeholder="Ex: João Silva" autocomplete="name" />
+                    <span class="field-hint"></span>
+                  </div>
+                  <div class="form-group">
+                    <label for="email">E-mail <span class="required">*</span></label>
+                    <input type="email" id="email" name="email" required placeholder="joao@exemplo.com" autocomplete="email" />
+                    <span class="field-hint"></span>
+                  </div>
+                  <div class="form-group">
+                    <label for="tipo">Tipo de Solicitação <span class="required">*</span></label>
+                    <select id="tipo" name="tipo">
+                      <option value="Nova aplicação">Nova aplicação</option>
+                      <option value="Atualização cadastral">Atualização cadastral</option>
+                      <option value="Resgate parcial">Resgate parcial</option>
+                      <option value="Encerramento de conta">Encerramento de conta</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="patrimonio">Valor do Patrimônio (R$) <span class="required">*</span></label>
+                    <input type="number" id="patrimonio" name="patrimonio" required min="0" step="1000" placeholder="250000" />
+                    <span class="field-hint" id="patrimonio-hint"></span>
+                  </div>
+                </div>
+
+                <div class="form-actions">
+                  <button type="reset" class="btn btn-ghost">Limpar</button>
+                  <button type="submit" class="btn btn-primary" id="btn-submit">
+                    <span class="btn-text">Cadastrar Cliente</span>
+                    <span class="btn-spinner hidden"></span>
+                  </button>
+                </div>
+              </form>
+
+              <div id="response-create" class="response-box hidden"></div>
+            </div>
+
+            <div class="card info-side">
+              <h3>Como funciona</h3>
+              <ul class="steps-list">
+                <li>
+                  <span class="step-num">1</span>
+                  <div>
+                    <strong>Cadastro</strong>
+                    <p>O cliente é salvo no banco PostgreSQL com status "Aguardando Análise".</p>
+                  </div>
+                </li>
+                <li>
+                  <span class="step-num">2</span>
+                  <div>
+                    <strong>Integração Pipefy</strong>
+                    <p>Uma mutation GraphQL <code>createCard</code> é montada e enviada ao Pipefy (ou stub retornado em modo dev).</p>
+                  </div>
+                </li>
+                <li>
+                  <span class="step-num">3</span>
+                  <div>
+                    <strong>Webhook</strong>
+                    <p>Quando o card é atualizado no Pipefy, o webhook processa o evento e atualiza o cliente.</p>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <!-- SECTION: Webhook -->
+        <section class="section" id="section-webhook">
+          <div class="page-header">
+            <h2 class="page-title">Simulador de Webhook</h2>
+            <p class="page-subtitle">Dispare eventos do Pipefy para testar o fluxo</p>
+          </div>
+
+          <div class="form-layout">
+            <div class="card form-card">
+              <h3 class="card-title">POST /webhooks/pipefy/card-updated</h3>
+              <div class="form-group" style="margin-top:1.25rem">
+                <label for="webhook-email">E-mail do Cliente <span class="required">*</span></label>
+                <input type="email" id="webhook-email" placeholder="joao@exemplo.com" />
+              </div>
+              <div class="form-group">
+                <label for="webhook-status">Novo Status</label>
+                <select id="webhook-status">
+                  <option value="Processado">Processado</option>
+                  <option value="Aguardando Análise">Aguardando Análise</option>
+                </select>
+              </div>
+              <div class="payload-preview" id="payload-preview">
+                <span class="payload-label">Payload gerado</span>
+                <pre><code id="payload-code">{}</code></pre>
+              </div>
+              <button id="btn-webhook" class="btn btn-accent" style="margin-top:1rem;width:100%">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                Disparar Webhook
+              </button>
+              <div id="response-webhook" class="response-box hidden"></div>
+            </div>
+
+            <div class="card info-side">
+              <h3>GraphQL Mutations</h3>
+              <div class="tabs" style="margin-top:1rem">
+                <button class="tab-btn active" data-tab="tab-create">createCard</button>
+                <button class="tab-btn" data-tab="tab-update">updateCardField</button>
+              </div>
+              <div id="tab-create" class="tab-content active">
+                <pre><code>mutation CreateCard($input: CreateCardInput!) {
   createCard(input: $input) {
-    card {
-      id
-      title
-      fields {
-        name
-        value
-      }
-    }
+    card { id title fields { name value } }
   }
 }</code></pre>
-          <p class="mutation-desc">
-            📍 Localizado em:
-            <code>src/infrastructure/external/pipefy_gateway_impl.py:20</code>
-          </p>
-        </div>
-
-        <div id="updatecard" class="tab-content">
-          <h3>Mutation: Atualizar Card</h3>
-          <pre><code>mutation UpdateCardField($input: UpdateCardFieldInput!) {
+                <p class="file-ref">📍 <code>infrastructure/external/pipefy_gateway_impl.py:20</code></p>
+              </div>
+              <div id="tab-update" class="tab-content">
+                <pre><code>mutation UpdateCardField($input: UpdateCardFieldInput!) {
   updateCardField(input: $input) {
-    card {
-      id
-      fields {
-        name
-        value
-      }
-    }
+    card { id fields { name value } }
   }
 }</code></pre>
-          <p class="mutation-desc">
-            📍 Localizado em:
-            <code>src/infrastructure/external/pipefy_gateway_impl.py:60</code>
-          </p>
-        </div>
-      </section>
+                <p class="file-ref">📍 <code>infrastructure/external/pipefy_gateway_impl.py:60</code></p>
+              </div>
+            </div>
+          </div>
+        </section>
 
-      <section class="card">
-        <h2>📋 Exemplos de Payload</h2>
-        <div class="tabs">
-          <button class="tab-btn active" data-tab="payload-create">
-            POST /clientes
-          </button>
-          <button class="tab-btn" data-tab="payload-webhook">
-            POST /webhooks/pipefy/card-updated
-          </button>
-        </div>
-
-        <div id="payload-create" class="tab-content active">
-          <h3>Criar Cliente</h3>
-          <pre><code>{
-  "cliente_nome": "João Silva",
-  "cliente_email": "joao.silva@example.com",
-  "tipo_solicitacao": "Atualização cadastral",
-  "valor_patrimonio": 250000
-}</code></pre>
-        </div>
-
-        <div id="payload-webhook" class="tab-content">
-          <h3>Webhook do Pipefy</h3>
-          <pre><code>{
-  "event_id": "evt_123",
-  "card_id": "card_456",
-  "cliente_email": "joao.silva@example.com",
-  "timestamp": "2026-05-25T12:00:00Z"
-}</code></pre>
-        </div>
-      </section>
-
-      <section class="card">
-        <h2>ℹ️ Informações</h2>
-        <div class="info-box">
-          <p>
-            <strong>Swagger UI:</strong>
-            <a href="/docs" target="_blank">http://localhost:8000/docs</a>
-          </p>
-          <p>
-            <strong>Health Check:</strong>
-            <a href="/health" target="_blank">http://localhost:8000/health</a>
-          </p>
-        </div>
-      </section>
-    </main>
-
-    <footer class="footer">
-      <p>Mundo Invest API base</p>
-    </footer>
+      </main>
+    </div>
 
     <script src="/static/app.js"></script>
   </body>

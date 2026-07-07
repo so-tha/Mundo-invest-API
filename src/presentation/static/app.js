@@ -1,245 +1,402 @@
 /**
- * Aplicação web para gerenciar clientes Mundo Invest
- * Integração com API de criação de clientes e webhooks do Pipefy
+ * Mundo Invest — Dashboard Frontend
+ * Premium fintech UI for the FastAPI backend
  */
 
-const API_BASE = 'http://localhost:8000';
+const API_BASE = '';  // same origin (served by FastAPI)
 
-async function apiCall(method, path, data = null) {
-    const options = {
-        method,
-        headers: {
-            'Content-Type': 'application/json',
-        }
-    };
+// ─── State ───────────────────────────────────────────────────────────────────
 
-    if (data) {
-        options.body = JSON.stringify(data);
-    }
+let allClients = [];
+let filteredClients = [];
+let currentPage = 1;
+const PAGE_SIZE = 10;
 
-    try {
-        const response = await fetch(`${API_BASE}${path}`, options);
-        const json = await response.json();
-        return { ok: response.ok, status: response.status, data: json };
-    } catch (error) {
-        return { ok: false, status: 0, data: { error: error.message } };
-    }
+// ─── API Helper ──────────────────────────────────────────────────────────────
+
+async function api(method, path, body = null) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (body) opts.body = JSON.stringify(body);
+  try {
+    const res = await fetch(`${API_BASE}${path}`, opts);
+    const data = await res.json();
+    return { ok: res.ok, status: res.status, data };
+  } catch (err) {
+    return { ok: false, status: 0, data: { error: err.message } };
+  }
 }
 
-function formatCurrency(value) {
-    return new Intl.NumberFormat('pt-BR', {
-        style: 'currency',
-        currency: 'BRL'
-    }).format(value);
+// ─── Formatters ──────────────────────────────────────────────────────────────
+
+function currency(v) {
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
 }
 
-function getStatusBadgeClass(status) {
-    if (status.includes('Aguardando')) return 'badge-aguardando';
-    if (status.includes('Processado')) return 'badge-processado';
-    return 'badge-aguardando';
+function statusBadge(status) {
+  if (!status) return `<span class="badge badge-neutral">—</span>`;
+  const cls = status.includes('Aguardando') ? 'badge-aguardando' : 'badge-processado';
+  return `<span class="badge ${cls}">${status}</span>`;
 }
 
-function getPriorityBadgeClass(priority) {
-    if (!priority) return 'badge-normal';
-    if (priority.includes('alta')) return 'badge-alta';
-    return 'badge-normal';
+function priorityBadge(p) {
+  if (!p) return `<span class="badge badge-neutral">—</span>`;
+  const label = p.replace('prioridade_', '');
+  const cls = label.toLowerCase().includes('alta') ? 'badge-alta' : 'badge-normal';
+  return `<span class="badge ${cls}">${label.charAt(0).toUpperCase() + label.slice(1)}</span>`;
 }
 
-function showResponse(elementId, success, message, data = null) {
-    const element = document.getElementById(elementId);
-    element.classList.remove('hidden', 'success', 'error', 'warning');
-    element.classList.add(success ? 'success' : 'error');
+// ─── Response Box ─────────────────────────────────────────────────────────────
 
-    let html = `<strong>${success ? '✅ Sucesso!' : '❌ Erro'}</strong><br>${message}`;
-
-    if (data) {
-        html += `<pre><code>${JSON.stringify(data, null, 2)}</code></pre>`;
-    }
-
-    element.innerHTML = html;
+function showResponse(id, success, message, data = null) {
+  const el = document.getElementById(id);
+  el.className = `response-box ${success ? 'success' : 'error'}`;
+  let html = `<strong>${success ? '✅ ' : '❌ '}${message}</strong>`;
+  if (data) html += `<pre><code>${JSON.stringify(data, null, 2)}</code></pre>`;
+  el.innerHTML = html;
 }
 
-async function checkApiHealth() {
-    const statusElement = document.getElementById('api-status');
-    try {
-        const result = await apiCall('GET', '/health');
-        if (result.ok) {
-            statusElement.textContent = '✅ API Online';
-            statusElement.classList.add('healthy');
-        } else {
-            statusElement.textContent = '⚠️ API Offline';
-            statusElement.classList.add('error');
-        }
-    } catch (error) {
-        statusElement.textContent = '❌ API Indisponível';
-        statusElement.classList.add('error');
-    }
+// ─── API Health ───────────────────────────────────────────────────────────────
+
+async function checkHealth() {
+  const pill = document.getElementById('api-status');
+  const label = pill.querySelector('.status-label');
+  const r = await api('GET', '/health');
+  if (r.ok && r.data.status === 'ok') {
+    pill.className = 'api-status-pill online';
+    label.textContent = 'API Online';
+  } else {
+    pill.className = 'api-status-pill offline';
+    label.textContent = 'API Offline';
+  }
 }
 
-// ============================================
-// Form Handlers
-// ============================================
+// ─── Load Clients ─────────────────────────────────────────────────────────────
+
+async function loadClients() {
+  const r = await api('GET', '/clientes/?limit=100&offset=0');
+  if (r.ok) {
+    allClients = r.data.clientes || [];
+    filteredClients = [...allClients];
+    renderMetrics();
+    renderClientsTable();
+    renderDashboardRecent();
+  }
+}
+
+// ─── Metrics ──────────────────────────────────────────────────────────────────
+
+function renderMetrics() {
+  const total = allClients.length;
+  const patrimonio = allClients.reduce((s, c) => s + (c.valor_patrimonio || 0), 0);
+  const aguardando = allClients.filter(c => c.status?.includes('Aguardando')).length;
+  const processados = allClients.filter(c => c.status?.includes('Processado')).length;
+
+  animateCount('metric-total-val', total, v => String(v));
+  animateCount('metric-patrimonio-val', patrimonio, v => currency(v));
+  animateCount('metric-aguardando-val', aguardando, v => String(v));
+  animateCount('metric-processados-val', processados, v => String(v));
+}
+
+function animateCount(id, target, fmt) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const start = 0;
+  const duration = 700;
+  const startTime = performance.now();
+
+  function step(now) {
+    const progress = Math.min((now - startTime) / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    const current = Math.round(start + (target - start) * eased);
+    el.textContent = fmt(current);
+    if (progress < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+// ─── Dashboard Recent ─────────────────────────────────────────────────────────
+
+function renderDashboardRecent() {
+  const container = document.getElementById('dashboard-clientes-container');
+  const recent = allClients.slice(-5).reverse();
+
+  if (recent.length === 0) {
+    container.innerHTML = '<p class="empty-state">Nenhum cliente cadastrado ainda.</p>';
+    return;
+  }
+
+  container.innerHTML = buildTable(recent);
+}
+
+// ─── Full Client Table ────────────────────────────────────────────────────────
+
+function renderClientsTable() {
+  const container = document.getElementById('clientes-container');
+  if (!container) return;
+
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const paged = filteredClients.slice(start, start + PAGE_SIZE);
+
+  if (paged.length === 0) {
+    container.innerHTML = '<p class="empty-state">Nenhum cliente encontrado.</p>';
+    renderPagination(0);
+    return;
+  }
+
+  container.innerHTML = buildTable(paged);
+  renderPagination(filteredClients.length);
+}
+
+function buildTable(clients) {
+  return `
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Nome</th>
+          <th>Email</th>
+          <th>Tipo</th>
+          <th>Patrimônio</th>
+          <th>Status</th>
+          <th>Prioridade</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${clients.map(c => `
+          <tr>
+            <td style="color:var(--text-muted);font-size:0.8rem">${c.id}</td>
+            <td class="td-name">${escHtml(c.nome)}</td>
+            <td class="td-email">${escHtml(c.email)}</td>
+            <td style="color:var(--text-secondary);font-size:0.83rem">${escHtml(c.tipo_solicitacao)}</td>
+            <td class="td-currency">${currency(c.valor_patrimonio)}</td>
+            <td>${statusBadge(c.status)}</td>
+            <td>${priorityBadge(c.prioridade)}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+function escHtml(s) {
+  if (!s) return '—';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ─── Pagination ───────────────────────────────────────────────────────────────
+
+function renderPagination(total) {
+  const container = document.getElementById('pagination');
+  if (!container) return;
+  const pages = Math.ceil(total / PAGE_SIZE);
+  if (pages <= 1) { container.innerHTML = ''; return; }
+
+  let html = '';
+  for (let i = 1; i <= pages; i++) {
+    html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
+  }
+  container.innerHTML = html;
+
+  container.querySelectorAll('.page-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentPage = parseInt(btn.dataset.page);
+      renderClientsTable();
+    });
+  });
+}
+
+// ─── Search ───────────────────────────────────────────────────────────────────
+
+function setupSearch() {
+  const input = document.getElementById('search-input');
+  if (!input) return;
+  input.addEventListener('input', () => {
+    const q = input.value.toLowerCase().trim();
+    filteredClients = q
+      ? allClients.filter(c =>
+          (c.nome || '').toLowerCase().includes(q) ||
+          (c.email || '').toLowerCase().includes(q)
+        )
+      : [...allClients];
+    currentPage = 1;
+    renderClientsTable();
+  });
+}
+
+// ─── Create Client Form ───────────────────────────────────────────────────────
 
 async function handleCreateClient(e) {
-    e.preventDefault();
+  e.preventDefault();
 
-    const formData = {
-        cliente_nome: document.getElementById('nome').value,
-        cliente_email: document.getElementById('email').value,
-        tipo_solicitacao: 'Nova aplicação',
-        valor_patrimonio: parseInt(document.getElementById('patrimonio').value)
-    };
+  const btn = document.getElementById('btn-submit');
+  const btnText = btn.querySelector('.btn-text');
+  const btnSpinner = btn.querySelector('.btn-spinner');
 
-    const result = await apiCall('POST', '/clientes/', formData);
+  // Set loading state
+  btn.disabled = true;
+  btnText.textContent = 'Enviando...';
+  btnSpinner.classList.remove('hidden');
 
-    if (result.ok) {
-        showResponse(
-            'response-create',
-            true,
-            `Cliente criado com sucesso! ID: ${result.data.cliente_id}`,
-            result.data
-        );
-        document.getElementById('form-cliente').reset();
-        loadClients(); 
-    } else {
-        showResponse(
-            'response-create',
-            false,
-            `Erro ao criar cliente: ${result.data.detail || result.data.error}`,
-            result.data
-        );
-    }
+  const body = {
+    cliente_nome: document.getElementById('nome').value.trim(),
+    cliente_email: document.getElementById('email').value.trim(),
+    tipo_solicitacao: document.getElementById('tipo').value,
+    valor_patrimonio: parseFloat(document.getElementById('patrimonio').value),
+  };
+
+  const r = await api('POST', '/clientes/', body);
+
+  btn.disabled = false;
+  btnText.textContent = 'Cadastrar Cliente';
+  btnSpinner.classList.add('hidden');
+
+  if (r.ok) {
+    showResponse('response-create', true, `Cliente #${r.data.cliente_id} cadastrado com sucesso!`, r.data);
+    document.getElementById('form-cliente').reset();
+    await loadClients();
+  } else {
+    const msg = r.data.detail || r.data.error || 'Erro desconhecido';
+    showResponse('response-create', false, msg, r.data);
+  }
+}
+
+// ─── Webhook Simulator ────────────────────────────────────────────────────────
+
+function updatePayloadPreview() {
+  const email = document.getElementById('webhook-email')?.value.trim() || 'cliente@exemplo.com';
+  const payload = {
+    event_id: `evt_${Date.now()}`,
+    card_id: `card_${Math.random().toString(36).substr(2, 9)}`,
+    cliente_email: email,
+    timestamp: new Date().toISOString(),
+  };
+  const code = document.getElementById('payload-code');
+  if (code) code.textContent = JSON.stringify(payload, null, 2);
+  return payload;
 }
 
 async function handleWebhook() {
-    const email = document.getElementById('webhook-email').value.trim();
+  const email = document.getElementById('webhook-email')?.value.trim();
+  if (!email) {
+    showResponse('response-webhook', false, 'Informe o e-mail do cliente.');
+    return;
+  }
 
-    if (!email) {
-        showResponse('response-webhook', false, 'Por favor, preencha o email do cliente');
-        return;
-    }
+  const payload = updatePayloadPreview();
+  const btn = document.getElementById('btn-webhook');
+  btn.disabled = true;
+  btn.textContent = '⏳ Enviando...';
 
-    const webhook_data = {
-        event_id: `evt_${Date.now()}`,
-        card_id: `card_${Math.random().toString(36).substr(2, 9)}`,
-        cliente_email: email,
-        timestamp: new Date().toISOString()
-    };
+  const r = await api('POST', '/webhooks/pipefy/card-updated', payload);
 
-    const result = await apiCall('POST', '/webhooks/pipefy/card-updated', webhook_data);
+  btn.disabled = false;
+  btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg> Disparar Webhook`;
 
-    if (result.ok) {
-        const message = result.data.duplicado
-            ? `Evento duplicado: ${result.data.mensagem}`
-            : `Webhook processado com sucesso!`;
-
-        showResponse('response-webhook', true, message, result.data);
-        loadClients();
-    } else {
-        const errorMsg = result.data.detail || result.data.mensagem || result.data.error;
-        showResponse(
-            'response-webhook',
-            false,
-            `❌ Erro ao processar webhook: ${errorMsg}`,
-            result.data
-        );
-    }
+  if (r.ok) {
+    const dup = r.data.duplicado;
+    showResponse('response-webhook', true, dup ? 'Evento duplicado (idempotente).' : 'Webhook processado com sucesso!', r.data);
+    await loadClients();
+  } else {
+    showResponse('response-webhook', false, r.data.detail || r.data.error || 'Erro ao processar.', r.data);
+  }
 }
 
-async function loadClients() {
-    const container = document.getElementById('clientes-container');
-    container.innerHTML = '<p class="loading"><span class="spinner"></span> Carregando...</p>';
+// ─── Navigation ───────────────────────────────────────────────────────────────
 
-    const result = await apiCall('GET', '/clientes/');
+const SECTIONS = ['dashboard', 'clientes', 'novo', 'webhook'];
 
-    if (result.ok && result.data.total > 0) {
-        let html = `
-            <table>
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Nome</th>
-                        <th>Email</th>
-                        <th>Tipo</th>
-                        <th>Patrimônio</th>
-                        <th>Status</th>
-                        <th>Prioridade</th>
-                    </tr>
-                </thead>
-                <tbody>
-        `;
+function navigate(section) {
+  SECTIONS.forEach(s => {
+    document.getElementById(`section-${s}`)?.classList.remove('active');
+    document.getElementById(`nav-${s}`)?.classList.remove('active');
+  });
 
-        result.data.clientes.forEach(cliente => {
-            const statusClass = getStatusBadgeClass(cliente.status);
-            const statusDisplay = cliente.status === 'Processado' ? 'Novo Cliente' : cliente.status;
-            const priorityText = cliente.prioridade 
-                ? cliente.prioridade.replace('prioridade_', '').charAt(0).toUpperCase() + cliente.prioridade.replace('prioridade_', '').slice(1)
-                : '—';
-            const priorityClass = getPriorityBadgeClass(cliente.prioridade);
+  document.getElementById(`section-${section}`)?.classList.add('active');
+  document.getElementById(`nav-${section}`)?.classList.add('active');
 
-            html += `
-                <tr>
-                    <td>${cliente.id}</td>
-                    <td><strong>${cliente.nome}</strong></td>
-                    <td>${cliente.email}</td>
-                    <td>${cliente.tipo_solicitacao}</td>
-                    <td>${formatCurrency(cliente.valor_patrimonio)}</td>
-                    <td><span class="badge ${statusClass}">${statusDisplay}</span></td>
-                    <td><span class="badge ${priorityClass}">${priorityText}</span></td>
-                </tr>
-            `;
-        });
+  const titles = { dashboard: 'Dashboard', clientes: 'Clientes', novo: 'Novo Cliente', webhook: 'Webhooks' };
+  const topbarTitle = document.getElementById('topbar-title');
+  if (topbarTitle) topbarTitle.textContent = titles[section] || '';
 
-        html += `
-                </tbody>
-            </table>
-        `;
+  // Close sidebar on mobile
+  if (window.innerWidth <= 768) {
+    document.getElementById('sidebar')?.classList.remove('open');
+  }
 
-        container.innerHTML = html;
-    } else if (result.ok) {
-        container.innerHTML = '<p style="text-align: center; color: #999;">Nenhum cliente cadastrado</p>';
-    } else {
-        container.innerHTML = '<p style="text-align: center; color: #c62828;">❌ Erro ao carregar clientes</p>';
-    }
+  if (section === 'clientes') {
+    setupSearch();
+    renderClientsTable();
+  }
 }
 
-// ============================================
-// Tab Navigation
-// ============================================
+// ─── Tabs ─────────────────────────────────────────────────────────────────────
 
 function setupTabs() {
-    const tabButtons = document.querySelectorAll('.tab-btn');
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tabId = btn.dataset.tab;
+      const parent = btn.closest('.card, .info-side');
+      if (!parent) return;
 
-    tabButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            const tabName = button.getAttribute('data-tab');
-            const allContents = document.querySelectorAll('.tab-content');
-            const allButtons = document.querySelectorAll('.tab-btn');
+      parent.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
 
-            allContents.forEach(content => content.classList.remove('active'));
-            allButtons.forEach(btn => btn.classList.remove('active'));
-
-            const content = document.getElementById(tabName);
-            if (content) {
-                content.classList.add('active');
-                button.classList.add('active');
-            }
-        });
+      btn.classList.add('active');
+      parent.querySelector(`#${tabId}`)?.classList.add('active');
     });
+  });
 }
 
-// ============================================
-// Event Listeners
-// ============================================
+// ─── Init ─────────────────────────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', () => {
-    checkApiHealth();
-    setInterval(checkApiHealth, 30000);
-    loadClients();
 
-    document.getElementById('form-cliente').addEventListener('submit', handleCreateClient);
-    document.getElementById('btn-webhook').addEventListener('click', handleWebhook);
-    document.getElementById('btn-refresh').addEventListener('click', loadClients);
+  // Sidebar nav
+  SECTIONS.forEach(s => {
+    document.getElementById(`nav-${s}`)?.addEventListener('click', e => {
+      e.preventDefault();
+      navigate(s);
+    });
+  });
 
-    setupTabs();
+  // Mobile menu toggle
+  document.getElementById('menu-toggle')?.addEventListener('click', () => {
+    document.getElementById('sidebar')?.classList.toggle('open');
+  });
+
+  // Refresh buttons
+  document.getElementById('btn-refresh-top')?.addEventListener('click', loadClients);
+  document.getElementById('btn-refresh-clientes')?.addEventListener('click', loadClients);
+
+  // "Ver todos" on dashboard
+  document.getElementById('btn-ver-todos')?.addEventListener('click', () => navigate('clientes'));
+
+  // Form
+  document.getElementById('form-cliente')?.addEventListener('submit', handleCreateClient);
+
+  // Patrimônio hint
+  document.getElementById('patrimonio')?.addEventListener('input', function () {
+    const hint = document.getElementById('patrimonio-hint');
+    if (hint && this.value) hint.textContent = currency(parseFloat(this.value) || 0);
+    else if (hint) hint.textContent = '';
+  });
+
+  // Webhook
+  document.getElementById('btn-webhook')?.addEventListener('click', handleWebhook);
+  document.getElementById('webhook-email')?.addEventListener('input', updatePayloadPreview);
+  updatePayloadPreview();
+
+  // Tabs
+  setupTabs();
+
+  // Search (lazy — only when section is active)
+  setupSearch();
+
+  // Boot
+  checkHealth();
+  setInterval(checkHealth, 30_000);
+  loadClients();
+
+  // Start on dashboard
+  navigate('dashboard');
 });
